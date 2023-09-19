@@ -5,9 +5,8 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import Select
+from selenium.webdriver.common.action_chains import ActionChains
 import time
-from selenium.webdriver.support.ui import Select
 
 class TestFlightBooking(unittest.TestCase):
 
@@ -52,6 +51,20 @@ class TestFlightBooking(unittest.TestCase):
     def take_screenshot(self, name):
         self.driver.save_screenshot(f"reports/{self.__class__.__name__}/{name}.png")
 
+    def change_date_class(self, start_date_label, end_date_label, new_start_class, new_end_class):
+     try:
+        date_elements = WebDriverWait(self.driver, 10).until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, '[aria-label^="Sun "]'))
+        )
+        for date_element in date_elements:
+            date_label = date_element.get_attribute("aria-label")
+            if date_label == start_date_label:
+                self.driver.execute_script(f"arguments[0].setAttribute('class', '{new_start_class}');", date_element)
+            elif date_label == end_date_label:
+                self.driver.execute_script(f"arguments[0].setAttribute('class', '{new_end_class}');", date_element)
+     except Exception as e:
+        self.fail(f"An error occurred while changing the class of the date elements: {str(e)}")
+
     def test_flight_booking(self):
         # Navigate to the flight booking page
         self.driver.get("https://www.makemytrip.com/")
@@ -62,49 +75,48 @@ class TestFlightBooking(unittest.TestCase):
         # Remove the second popup
         self.remove_second_popup()
 
-        # Search for a single flight by date, origin, and destination
+        # Search for a flight with a date range, origin, and destination
         try:
             # Select origin from the combo box
-            # Send keys to the origin input field (example: Mumbai)
             origin_input = WebDriverWait(self.driver, 10).until(
-              EC.element_to_be_clickable((By.ID, "fromCity"))
+                EC.element_to_be_clickable((By.ID, "fromCity"))
             )
             origin_input.send_keys("Mumbai")
             time.sleep(3)
 
             # Wait for the autosuggestion to appear and select the first option
             origin_suggestion = WebDriverWait(self.driver, 10).until(
-            EC.element_to_be_clickable((By.ID, "react-autowhatever-1-section-0-item-0"))
+                EC.element_to_be_clickable((By.ID, "react-autowhatever-1-section-0-item-0"))
             )
             origin_suggestion.click()
 
-            # Send keys to the destination input field (example: Bengaluru)
+            # Select destination from the combo box
             destination_input = WebDriverWait(self.driver, 10).until(
-             EC.element_to_be_clickable((By.ID, "toCity"))
+                EC.element_to_be_clickable((By.ID, "toCity"))
             )
             destination_input.send_keys("Bengaluru")
             time.sleep(3)
 
             # Wait for the autosuggestion to appear and select the first option
             destination_suggestion = WebDriverWait(self.driver, 10).until(
-             EC.element_to_be_clickable((By.ID, "react-autowhatever-1-section-0-item-0"))
+                EC.element_to_be_clickable((By.ID, "react-autowhatever-1-section-0-item-0"))
             )
             destination_suggestion.click()
 
-            # Clear the date input field
-            date_input = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.ID, "departure"))
+            # Change the class of the start date and end date
+            # Change the class of the start date and end date
+            self.change_date_class("Sun Oct 08 2023", "Sun Oct 15 2023", "DayPicker-Day DayPicker-Day--start DayPicker-Day--selected", "DayPicker-Day DayPicker-Day--end DayPicker-Day--selected")
+
+
+            # Scroll to the "Search" button
+            search_button = WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, ".widgetSearchBtn"))
             )
-            date_input.clear()
+            actions = ActionChains(self.driver)
+            actions.move_to_element(search_button).perform()
 
-            # Select the desired date from the date picker
-            date_select = Select(self.driver.find_element(By.ID, "departure"))
-            date_select.select_by_visible_text("20")
-
-            # search_button = WebDriverWait(self.driver, 10).until(
-            #     EC.element_to_be_clickable((By.CSS_SELECTOR, ".widgetSearchBtn"))
-            # )
-            # search_button.click()
+            # Click the "Search" button
+            search_button.click()
             time.sleep(10)
             self.take_screenshot("Search_Flight")
         except Exception as e:
@@ -117,6 +129,7 @@ class TestFlightBooking(unittest.TestCase):
             )
             first_flight.click()
             self.take_screenshot("Select_Flight")
+
         except Exception as e:
             self.fail(f"An error occurred while selecting the first flight: {str(e)}")
 
@@ -151,7 +164,7 @@ class TestFlightBooking(unittest.TestCase):
         except Exception as e:
             self.fail(f"An error occurred while filling checkout information: {str(e)}")
 
-        # Reach till Payment screen
+        # Reach the Payment screen
         try:
             proceed_button = WebDriverWait(self.driver, 10).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, ".btnReviewContinue"))
