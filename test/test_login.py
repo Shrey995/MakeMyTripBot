@@ -70,21 +70,12 @@ class TestLoginWithSecondGoogleAccount(unittest.TestCase):
             
             # Wait for the password field to appear
             password_field = WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "input[jsname='YPqjbf']"))
+                EC.presence_of_element_located((By.NAME, "Passwd"))
             )
             
-            # Set the app name as specified in the input
-            app_name = credentials["appname"]
-
-            # Find the "Use your password" option and click it
-            use_password_option = WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, "//div[contains(text(), 'Use your password')]"))
-            )
-            use_password_option.click()
-
             # Fill the password field with the app password
-            password_field.send_keys(credentials["apppassword"])
-
+            password_field.send_keys(credentials["password"])
+            
             # Click the "Next" button to login
             next_button = self.driver.find_element(By.ID, "passwordNext")
             next_button.click()
