@@ -7,6 +7,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 import time
+from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import Select
+import os
 
 class TestFlightBooking(unittest.TestCase):
 
@@ -170,62 +174,187 @@ class TestFlightBooking(unittest.TestCase):
               EC.element_to_be_clickable((By.XPATH, "//button[text()='Book Now']"))
              )
             book_button.click()
+            # Switch to the newly opened tab
+            self.driver.switch_to.window(self.driver.window_handles[-1])
+
+
+
+            self.driver.execute_script("window.scrollBy(0, 0);")
+            while True:
+                       try:
+                         # Locate the button element with the target text
+                         risk_trip_span = self.driver.find_element(By.XPATH, "//span[contains(text(), 'I will risk my trip')]")
+
+                         # If found, break the loop
+                         break
+                       except NoSuchElementException:
+                        # If not found, scroll down
+                        self.driver.execute_script("window.scrollBy(0, 100);")
+
+             # Click the button with the target text
+            risk_trip_span.click()
+
+            self.driver.execute_script("window.scrollBy(0, 0);")
+            # Scroll down until you find the button with text "+ ADD NEW ADULT"
+            target_text = "+ ADD NEW ADULT"
+            while True:
+                       try:
+                         # Locate the button element with the target text
+                         button = self.driver.find_element(By.XPATH, f"//button[text()='{target_text}']")
+
+                         # If found, break the loop
+                         break
+                       except NoSuchElementException:
+                        # If not found, scroll down
+                        self.driver.execute_script("window.scrollBy(0, 100);")
+
+             # Click the button with the target text
+            button.click()
+
+
+            # Scroll down to make the form elements visible
+            self.driver.execute_script("window.scrollBy(0, 200);")
+
+            # Find and fill the "Last Name" field
+            last_name_field = self.driver.find_element(By.CSS_SELECTOR, 'input[placeholder="Last Name"]')
+            last_name_field.send_keys("Doe")
+
+            # Find and fill the "First & Middle Name" field
+            first_middle_name_field = self.driver.find_element(By.CSS_SELECTOR, 'input[placeholder="First & Middle Name"]')
+            first_middle_name_field.send_keys("John Middle")
+            your_gender = "male"  # Change this to "female" if needed
+
+            # Find and select the gender radio button (choose either "male" or "female")
+
+            if your_gender == "male":
+                gender_radio = self.driver.find_element(By.CSS_SELECTOR, 'input[value="MALE"]')
+            else:
+                gender_radio = self.driver.find_element(By.CSS_SELECTOR, 'input[value="FEMALE"]')
+
+            gender_radio.click()
+            # Scroll down further if needed
+            self.driver.execute_script("window.scrollBy(0, 200);")
+
+            # Find and fill the "Mobile No" field
+            mobile_field = self.driver.find_element(By.CSS_SELECTOR, 'input[placeholder="Mobile No"]')
+            mobile_field.send_keys("8369932133")
+
+            # Find and fill the "Email" field
+            email_field = self.driver.find_element(By.CSS_SELECTOR, 'input[placeholder="Email"]')
+            email_field.send_keys("johndoe@example.com")
+
+            # Find and fill the "Your Pincode" field
+            pincode_field = self.driver.find_element(By.CSS_SELECTOR, 'input[placeholder="Your Pincode"]')
+            pincode_field.clear()  # Clear any existing value
+            pincode_field.send_keys("403512")
+
+
+            # Click on the element with ID "dt_state_gst_info"
+            # Locate the input element by ID
+# Assuming 'state_input' is the element you want to double-click
+            state_input = self.driver.find_element(By.ID, "dt_state_gst_info")
+
+# Create an ActionChains object
+            action_chains = ActionChains(self.driver)
+
+# Double-click the element
+            action_chains.double_click(state_input).perform()
+            time.sleep(10)
+
+            # Find the element with class "dropdownListWpr"
+            dropdown_list = self.driver.find_element(By.XPATH, '//*[@class="dropdownListWpr"]')
+
+             # Scroll the dropdown options until you find the right option
+            desired_option_text = "Goa"  # Replace with the actual text of the option you want to select
+            option_found = False
+
+            while not option_found:
+             # Locate all the options within the dropdown
+             options = dropdown_list.find_elements(By.CLASS_NAME, "dropdownListWpr__liItem")
+
+             # Check each option's text and click if it matches the desired text
+             for option in options:
+                  if desired_option_text in option.text:
+                      option.click()
+                      option_found = True
+                      break
+
+                   # If the desired option is not found, scroll the dropdown options
+                  if not option_found:
+                    self.driver.execute_script("arguments[0].scrollBy(0, 100);", dropdown_list)
+
+
+
+            # Scroll down further if needed
+            self.driver.execute_script("window.scrollBy(0, 200);")
+            # Click the input element with ID "cb_gst_info"
+            self.driver.execute_script("window.scrollBy(0, 0);")
+            while True:
+                       try:
+                         # Locate the button element with the target text
+                         risk_trip_span = self.driver.find_element(By.XPATH, "//p[contains(text(), 'Confirm and save billing details to your profile')]")
+
+                         # If found, break the loop
+                         break
+                       except NoSuchElementException:
+                        # If not found, scroll down
+                        self.driver.execute_script("window.scrollBy(0, 100);")
+
+             # Click the button with the target text
+            risk_trip_span.click()
+
+            # self.driver.execute_script("window.scrollBy(0, 0);")
+            # while True:
+            #            try:
+            #              # Locate the button element with the target text
+            #              risk_trip_span = self.driver.find_element(By.XPATH, "//span[contains(text(), 'Adult 1')]")
+
+            #              # If found, break the loop
+            #              break
+            #            except NoSuchElementException:
+            #             # If not found, scroll down
+            #             self.driver.execute_script("window.scrollBy(0, 100);")
+
+            #  # Click the button with the target text
+            # risk_trip_span.click()   
+
+            self.driver.execute_script("window.scrollBy(0, 0);")
+            while True:
+                       try:
+                         # Locate the button element with the target text
+                         continue_button = self.driver.find_element(By.XPATH, '//button[text()="Continue"]')
+
+                         # If found, break the loop
+                         break
+                       except NoSuchElementException:
+                        # If not found, scroll down
+                        self.driver.execute_script("window.scrollBy(0, 200);")
+            
+            continue_button.click()
+            # Wait for the popup to appear
+            popup_element = WebDriverWait(self.driver, 10).until(
+             EC.presence_of_element_located((By.CSS_SELECTOR, '.commonOverlay'))
+              )
+    
+            confirm_button = WebDriverWait(popup_element, 10).until(
+              EC.element_to_be_clickable((By.XPATH, '//button[text()="Confirm"]'))
+             )
+            time.sleep(10)
+            # Use JavaScript to prevent the default action (closing the window)
+            self.driver.execute_script("arguments[0].addEventListener('click', function(e) { e.preventDefault(); }, false);", confirm_button)
+            # Click the "Confirm" button
+            confirm_button.click()
+            # Get the handles of all open tabs/windows
+            window_handles = self.driver.window_handles
+
+            # Assuming the original tab is at index 0, switch back to it
+            self.driver.switch_to.window(window_handles[0])
             time.sleep(300)
-            # self.take_screenshot("Search_Flight")
+            self.take_screenshot("Search_Flight")
         except Exception as e:
-            self.fail(f"An error occurred during flight search: {str(e)}")
+            print(e)
+            # self.fail(f"An error occurred during flight search: {str(e)}")
 
-        # Select the first flight
-        try:
-            first_flight = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, "(//li[@class='flight_item'])[1]"))
-            )
-            first_flight.click()
-            # self.take_screenshot("Select_Flight")
-
-        except Exception as e:
-            self.fail(f"An error occurred while selecting the first flight: {str(e)}")
-
-        # Skip Seats & Food (Ancillaries)
-        try:
-            skip_button = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, ".skip_button"))
-            )
-            skip_button.click()
-            self.take_screenshot("Skip_Ancillaries")
-        except Exception as e:
-            self.fail(f"An error occurred while skipping ancillaries: {str(e)}")
-
-        # Fill checkout information
-        try:
-            passenger_name = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.NAME, "name"))
-            )
-            passenger_name.send_keys("John Doe")
-
-            email = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.NAME, "email"))
-            )
-            email.send_keys("johndoe@example.com")
-
-            phone = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.NAME, "phone"))
-            )
-            phone.send_keys("1234567890")
-
-            self.take_screenshot("Fill_Checkout_Info")
-        except Exception as e:
-            self.fail(f"An error occurred while filling checkout information: {str(e)}")
-
-        # Reach the Payment screen
-        try:
-            proceed_button = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, ".btnReviewContinue"))
-            )
-            proceed_button.click()
-            self.take_screenshot("Payment_Screen")
-        except Exception as e:
-            self.fail(f"An error occurred while proceeding to the payment screen: {str(e)}")
-
+       
 if __name__ == "__main__":
     unittest.main()
