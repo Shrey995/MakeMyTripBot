@@ -44,26 +44,67 @@ class TestFlightBooking(unittest.TestCase):
             # Click on the top-left part of the imageSlideContainer
             self.driver.execute_script("arguments[0].click();", image_slide_container)
 
-            self.take_screenshot("Top_Left_of_imageSlideContainer_Clicked")
+            # self.take_screenshot("Top_Left_of_imageSlideContainer_Clicked")
+        except Exception as e:
+            self.fail(f"An error occurred while clicking on the top-left part of imageSlideContainer: {str(e)}")
+
+    def remove_third_popup(self):
+        try:
+            # Scroll to the imageSlideContainer element
+            image_slide_container = self.driver.find_element(By.CLASS_NAME, "overlayBg")
+            self.driver.execute_script("arguments[0].scrollIntoView();", image_slide_container)
+
+            # Click on the top-left part of the imageSlideContainer
+            self.driver.execute_script("arguments[0].click();", image_slide_container)
+
+            # self.take_screenshot("Top_Left_of_imageSlideContainer_Clicked")
         except Exception as e:
             self.fail(f"An error occurred while clicking on the top-left part of imageSlideContainer: {str(e)}")
 
     def take_screenshot(self, name):
-        self.driver.save_screenshot(f"reports/{self.__class__.__name__}/{name}.png")
+        # Create a directory for this class's screenshots
+        class_dir = f"reports/{self.__class__.__name__}"
+        os.makedirs(class_dir, exist_ok=True)
+        self.driver.save_screenshot(f"{class_dir}/{name}.png")
 
-    def change_date_class(self, start_date_label, end_date_label, new_start_class, new_end_class):
-     try:
-        date_elements = WebDriverWait(self.driver, 10).until(
-            EC.presence_of_all_elements_located((By.CSS_SELECTOR, '[aria-label^="Sun "]'))
-        )
-        for date_element in date_elements:
-            date_label = date_element.get_attribute("aria-label")
-            if date_label == start_date_label:
-                self.driver.execute_script(f"arguments[0].setAttribute('class', '{new_start_class}');", date_element)
-            elif date_label == end_date_label:
-                self.driver.execute_script(f"arguments[0].setAttribute('class', '{new_end_class}');", date_element)
-     except Exception as e:
-        self.fail(f"An error occurred while changing the class of the date elements: {str(e)}")
+    def select_date(self, target_date):
+        try:
+            date_elements = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, '[aria-label^="Sun "]'))
+            )
+            for date_element in date_elements:
+                date_label = date_element.get_attribute("aria-label")
+                if date_label == target_date:
+                    # Click on the date element to select it
+                    date_element.click()
+                    return True
+        except Exception as e:
+            self.fail(f"An error occurred while selecting the date: {str(e)}")
+
+        return False  # Date not found
+
+    def select_departure_and_return_dates(self, departure_date, return_date):
+        try:
+            # Click the departure date input
+            # departure_input = WebDriverWait(self.driver, 10).until(
+            #     EC.element_to_be_clickable((By.ID, "departure")))
+            # departure_input.click()
+
+            # Select the departure date
+            if not self.select_date(departure_date):
+                self.fail(f"Departure date '{departure_date}' not found in the date picker")
+
+            # Click the return date input
+            # departure_input = WebDriverWait(self.driver, 10).until(
+            #     EC.element_to_be_clickable((By.ID, "departure")))
+            # departure_input.click()
+
+            # # Select the return date
+            # if not self.select_date(return_date):
+            #     self.fail(f"Return date '{return_date}' not found in the date picker")
+
+        except Exception as e:
+            self.fail(f"An error occurred while selecting departure and return dates: {str(e)}")
 
     def test_flight_booking(self):
         # Navigate to the flight booking page
@@ -103,22 +144,34 @@ class TestFlightBooking(unittest.TestCase):
             )
             destination_suggestion.click()
 
-            # Change the class of the start date and end date
-            # Change the class of the start date and end date
-            self.change_date_class("Sun Oct 08 2023", "Sun Oct 15 2023", "DayPicker-Day DayPicker-Day--start DayPicker-Day--selected", "DayPicker-Day DayPicker-Day--end DayPicker-Day--selected")
-
+            # Select departure and return dates
+            self.select_departure_and_return_dates("Sun Oct 08 2023", "Sun Oct 15 2023")
 
             # Scroll to the "Search" button
             search_button = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, ".widgetSearchBtn"))
+                EC.element_to_be_clickable((By.XPATH, "//a[text()='Search']"))
             )
             actions = ActionChains(self.driver)
             actions.move_to_element(search_button).perform()
 
             # Click the "Search" button
             search_button.click()
-            time.sleep(10)
-            self.take_screenshot("Search_Flight")
+            time.sleep(20)
+                    # Remove the second popup
+            self.remove_third_popup()
+            self.driver.execute_script("window.scrollBy(0, 200);")
+            # Locate and click the button by its ID
+            view_button = WebDriverWait(self.driver, 10).until(
+              EC.element_to_be_clickable((By.XPATH, "//span[contains(@class, 'appendRight8')]"))
+             )
+            view_button.click()
+            self.driver.execute_script("window.scrollBy(0, 200);")
+            book_button = WebDriverWait(self.driver, 10).until(
+              EC.element_to_be_clickable((By.XPATH, "//button[text()='Book Now']"))
+             )
+            book_button.click()
+            time.sleep(300)
+            # self.take_screenshot("Search_Flight")
         except Exception as e:
             self.fail(f"An error occurred during flight search: {str(e)}")
 
@@ -128,7 +181,7 @@ class TestFlightBooking(unittest.TestCase):
                 EC.element_to_be_clickable((By.XPATH, "(//li[@class='flight_item'])[1]"))
             )
             first_flight.click()
-            self.take_screenshot("Select_Flight")
+            # self.take_screenshot("Select_Flight")
 
         except Exception as e:
             self.fail(f"An error occurred while selecting the first flight: {str(e)}")
