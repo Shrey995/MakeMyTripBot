@@ -11,18 +11,36 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 import os
+import json
 
 class TestFlightBooking(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
-        cls.driver.implicitly_wait(10)
-        cls.driver.maximize_window()
+        # Find the last folder number in the "reports" directory
+        existing_folders = [f for f in os.listdir("reports") if f.startswith("test")]
+        cls.test_case_count = len(existing_folders) + 1
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.driver.quit()
+    def setUp(self):
+        self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
+        self.driver.implicitly_wait(10)
+        self.driver.maximize_window()
+
+        # Create the folder name with zero-padding
+        folder_name = f"test{self.test_case_count:02}_screenshots"
+        self.test_dir = os.path.join("reports", folder_name)
+        os.makedirs(self.test_dir, exist_ok=True)
+
+        # Read inputs from inputs.txt
+        with open('inputs/input.txt', 'r') as file:
+            self.inputs = json.load(file)
+
+        # Increment the test case count for the next test
+        self.__class__.test_case_count += 1
+
+    def tearDown(self):
+        self.driver.save_screenshot(os.path.join(self.test_dir, f"{str(int(time.time()))}.png"))
+        self.driver.quit()
 
     def remove_first_popup(self):
         try:
@@ -50,7 +68,7 @@ class TestFlightBooking(unittest.TestCase):
 
             # self.take_screenshot("Top_Left_of_imageSlideContainer_Clicked")
         except Exception as e:
-            self.fail(f"An error occurred while clicking on the top-left part of imageSlideContainer: {str(e)}")
+            pass
 
     def remove_third_popup(self):
         try:
@@ -63,13 +81,10 @@ class TestFlightBooking(unittest.TestCase):
 
             # self.take_screenshot("Top_Left_of_imageSlideContainer_Clicked")
         except Exception as e:
-            self.fail(f"An error occurred while clicking on the top-left part of imageSlideContainer: {str(e)}")
+            pass
 
     def take_screenshot(self, name):
-        # Create a directory for this class's screenshots
-        class_dir = f"reports/{self.__class__.__name__}"
-        os.makedirs(class_dir, exist_ok=True)
-        self.driver.save_screenshot(f"{class_dir}/{name}.png")
+        self.driver.save_screenshot(os.path.join(self.test_dir, f"{name}.png"))
 
     def select_date(self, target_date):
         try:
@@ -87,25 +102,11 @@ class TestFlightBooking(unittest.TestCase):
 
         return False  # Date not found
 
-    def select_departure_and_return_dates(self, departure_date, return_date):
+    def select_departure_date(self, departure_date):
         try:
-            # Click the departure date input
-            # departure_input = WebDriverWait(self.driver, 10).until(
-            #     EC.element_to_be_clickable((By.ID, "departure")))
-            # departure_input.click()
-
             # Select the departure date
             if not self.select_date(departure_date):
                 self.fail(f"Departure date '{departure_date}' not found in the date picker")
-
-            # Click the return date input
-            # departure_input = WebDriverWait(self.driver, 10).until(
-            #     EC.element_to_be_clickable((By.ID, "departure")))
-            # departure_input.click()
-
-            # # Select the return date
-            # if not self.select_date(return_date):
-            #     self.fail(f"Return date '{return_date}' not found in the date picker")
 
         except Exception as e:
             self.fail(f"An error occurred while selecting departure and return dates: {str(e)}")
@@ -126,7 +127,7 @@ class TestFlightBooking(unittest.TestCase):
             origin_input = WebDriverWait(self.driver, 10).until(
                 EC.element_to_be_clickable((By.ID, "fromCity"))
             )
-            origin_input.send_keys("Mumbai")
+            origin_input.send_keys(self.inputs.get("origin"))
             time.sleep(3)
 
             # Wait for the autosuggestion to appear and select the first option
@@ -139,7 +140,7 @@ class TestFlightBooking(unittest.TestCase):
             destination_input = WebDriverWait(self.driver, 10).until(
                 EC.element_to_be_clickable((By.ID, "toCity"))
             )
-            destination_input.send_keys("Bengaluru")
+            destination_input.send_keys(self.inputs.get("destination"))
             time.sleep(3)
 
             # Wait for the autosuggestion to appear and select the first option
@@ -149,7 +150,7 @@ class TestFlightBooking(unittest.TestCase):
             destination_suggestion.click()
 
             # Select departure and return dates
-            self.select_departure_and_return_dates("Sun Oct 08 2023", "Sun Oct 15 2023")
+            self.select_departure_date(self.inputs.get("departure_date"))
 
             # Scroll to the "Search" button
             search_button = WebDriverWait(self.driver, 10).until(
@@ -157,6 +158,7 @@ class TestFlightBooking(unittest.TestCase):
             )
             actions = ActionChains(self.driver)
             actions.move_to_element(search_button).perform()
+            self.take_screenshot("Search_Flight")
 
             # Click the "Search" button
             search_button.click()
@@ -173,11 +175,10 @@ class TestFlightBooking(unittest.TestCase):
             book_button = WebDriverWait(self.driver, 10).until(
               EC.element_to_be_clickable((By.XPATH, "//button[text()='Book Now']"))
              )
+            self.take_screenshot("Select_Flight")
             book_button.click()
             # Switch to the newly opened tab
             self.driver.switch_to.window(self.driver.window_handles[-1])
-
-
 
             self.driver.execute_script("window.scrollBy(0, 0);")
             while True:
@@ -193,7 +194,7 @@ class TestFlightBooking(unittest.TestCase):
 
              # Click the button with the target text
             risk_trip_span.click()
-
+            time.sleep(10)
             self.driver.execute_script("window.scrollBy(0, 0);")
             # Scroll down until you find the button with text "+ ADD NEW ADULT"
             target_text = "+ ADD NEW ADULT"
@@ -217,12 +218,12 @@ class TestFlightBooking(unittest.TestCase):
 
             # Find and fill the "Last Name" field
             last_name_field = self.driver.find_element(By.CSS_SELECTOR, 'input[placeholder="Last Name"]')
-            last_name_field.send_keys("Doe")
+            last_name_field.send_keys(self.inputs.get("last_name"))
 
             # Find and fill the "First & Middle Name" field
             first_middle_name_field = self.driver.find_element(By.CSS_SELECTOR, 'input[placeholder="First & Middle Name"]')
-            first_middle_name_field.send_keys("John Middle")
-            your_gender = "male"  # Change this to "female" if needed
+            first_middle_name_field.send_keys(self.inputs.get("first_name"))
+            your_gender = self.inputs.get("gender")  # Change this to "female" if needed
 
             # Find and select the gender radio button (choose either "male" or "female")
 
@@ -237,16 +238,16 @@ class TestFlightBooking(unittest.TestCase):
 
             # Find and fill the "Mobile No" field
             mobile_field = self.driver.find_element(By.CSS_SELECTOR, 'input[placeholder="Mobile No"]')
-            mobile_field.send_keys("8369932133")
+            mobile_field.send_keys(self.inputs.get("phone_number"))
 
             # Find and fill the "Email" field
             email_field = self.driver.find_element(By.CSS_SELECTOR, 'input[placeholder="Email"]')
-            email_field.send_keys("johndoe@example.com")
+            email_field.send_keys(self.inputs.get("email"))
 
             # Find and fill the "Your Pincode" field
             pincode_field = self.driver.find_element(By.CSS_SELECTOR, 'input[placeholder="Your Pincode"]')
             pincode_field.clear()  # Clear any existing value
-            pincode_field.send_keys("403512")
+            pincode_field.send_keys(self.inputs.get("pincode"))
 
 
             # Click on the element with ID "dt_state_gst_info"
@@ -265,12 +266,14 @@ class TestFlightBooking(unittest.TestCase):
             dropdown_list = self.driver.find_element(By.XPATH, '//*[@class="dropdownListWpr"]')
 
              # Scroll the dropdown options until you find the right option
-            desired_option_text = "Goa"  # Replace with the actual text of the option you want to select
+            desired_option_text = self.inputs.get("state")  # Replace with the actual text of the option you want to select
             option_found = False
 
             while not option_found:
+             self.driver.execute_script("arguments[0].scrollBy(0, 0);", dropdown_list)
              # Locate all the options within the dropdown
              options = dropdown_list.find_elements(By.CLASS_NAME, "dropdownListWpr__liItem")
+             
 
              # Check each option's text and click if it matches the desired text
              for option in options:
@@ -292,7 +295,7 @@ class TestFlightBooking(unittest.TestCase):
             while True:
                        try:
                          # Locate the button element with the target text
-                         risk_trip_span = self.driver.find_element(By.XPATH, "//p[contains(text(), 'Confirm and save billing details to your profile')]")
+                         confirm_billing_span = self.driver.find_element(By.XPATH, "//p[contains(text(), 'Confirm and save billing details to your profile')]")
 
                          # If found, break the loop
                          break
@@ -301,28 +304,14 @@ class TestFlightBooking(unittest.TestCase):
                         self.driver.execute_script("window.scrollBy(0, 100);")
 
              # Click the button with the target text
-            risk_trip_span.click()
-
-            # self.driver.execute_script("window.scrollBy(0, 0);")
-            # while True:
-            #            try:
-            #              # Locate the button element with the target text
-            #              risk_trip_span = self.driver.find_element(By.XPATH, "//span[contains(text(), 'Adult 1')]")
-
-            #              # If found, break the loop
-            #              break
-            #            except NoSuchElementException:
-            #             # If not found, scroll down
-            #             self.driver.execute_script("window.scrollBy(0, 100);")
-
-            #  # Click the button with the target text
-            # risk_trip_span.click()   
+            confirm_billing_span.click()
+  
 
             self.driver.execute_script("window.scrollBy(0, 0);")
             while True:
                        try:
                          # Locate the button element with the target text
-                         continue_button = self.driver.find_element(By.XPATH, '//button[text()="Continue"]')
+                         continue1_button = self.driver.find_element(By.XPATH, '//button[text()="Continue"]')
 
                          # If found, break the loop
                          break
@@ -330,30 +319,68 @@ class TestFlightBooking(unittest.TestCase):
                         # If not found, scroll down
                         self.driver.execute_script("window.scrollBy(0, 200);")
             
-            continue_button.click()
-            # Wait for the popup to appear
-            popup_element = WebDriverWait(self.driver, 10).until(
-             EC.presence_of_element_located((By.CSS_SELECTOR, '.commonOverlay'))
-              )
-    
-            confirm_button = WebDriverWait(popup_element, 10).until(
-              EC.element_to_be_clickable((By.XPATH, '//button[text()="Confirm"]'))
-             )
-            time.sleep(10)
-            # Use JavaScript to prevent the default action (closing the window)
-            self.driver.execute_script("arguments[0].addEventListener('click', function(e) { e.preventDefault(); }, false);", confirm_button)
-            # Click the "Confirm" button
-            confirm_button.click()
-            # Get the handles of all open tabs/windows
-            window_handles = self.driver.window_handles
+            continue1_button.click()
+            # time.sleep(10)
 
-            # Assuming the original tab is at index 0, switch back to it
-            self.driver.switch_to.window(window_handles[0])
-            time.sleep(300)
-            self.take_screenshot("Search_Flight")
+
+           # Scroll down to make the button visible (adjust the value as needed)
+            confirm1_button = self.driver.find_element(By.CSS_SELECTOR, 'div#root div.reviewTravellerAddons div.overlay div.commonOverlay div.detailsPopupFooter button.buttonPrimary.buttonBig.fontSize14')
+            self.take_screenshot("Confirm_Details")
+            confirm1_button.click()
+            # Get the handles of all open tabs/windows
+            # Intercept the window's close event
+            proceed1_button = self.driver.find_element(By.CSS_SELECTOR, 'div#root div.reviewTravellerAddons div.flightBody div.flightsContainer.footerSpace div.makeFlex.spaceBetween div.pageLeftConainer form#mainSection_1 div.oneCard-element div.componentContainer.appendBottom20.appendTop15 div.seatBookingOverlayOuter div.seatBookOverlayWrap p.seatBookingOverlayCta  button.lato-black.button.buttonPrimary.buttonBig.fontSize12')
+            proceed1_button.click()
+            time.sleep(10)
+
+            self.driver.execute_script("window.scrollBy(0, 0);")
+            while True:
+                       try:
+                         # Locate the button element with the target text
+                         continue2_button = self.driver.find_element(By.XPATH, '//button[text()="Continue"]')
+
+                         # If found, break the loop
+                         break
+                       except NoSuchElementException:
+                        # If not found, scroll down
+                        self.driver.execute_script("window.scrollBy(0, 200);")
+            
+            continue2_button.click()
+            time.sleep(10)
+            self.driver.execute_script("window.scrollBy(0, 0);")
+            while True:
+                       try:
+                         # Locate the button element with the target text
+                         continue3_button = self.driver.find_element(By.XPATH, '//button[text()="Continue"]')
+
+                         # If found, break the loop
+                         break
+                       except NoSuchElementException:
+                        # If not found, scroll down
+                        self.driver.execute_script("window.scrollBy(0, 200);")
+            
+            continue3_button.click()
+            time.sleep(10)
+            self.driver.execute_script("window.scrollBy(0, 0);")
+            while True:
+                       try:
+                         # Locate the button element with the target text
+                         proceed2_button = self.driver.find_element(By.CSS_SELECTOR, 'div#root div.reviewTravellerAddons div.flightBody div.flightsContainer.footerSpace div.makeFlex.spaceBetween div.pageLeftConainer form#mainSection_2 div#ACKNOWLEDGE_SECTION div.componentContainer.padding20.appendTop15 button.lato-black.button.buttonPrimary.extraPadBtn.fontSize16')
+
+                         # If found, break the loop
+                         break
+                       except NoSuchElementException:
+                        # If not found, scroll down
+                        self.driver.execute_script("window.scrollBy(0, 200);")
+            
+            
+            proceed2_button.click()
+            time.sleep(30)
+            self.take_screenshot("Payment_Gateway")
+            time.sleep(30)
         except Exception as e:
-            print(e)
-            # self.fail(f"An error occurred during flight search: {str(e)}")
+            # print(e)
+            self.fail(f"An error occurred during flight booking: {str(e)}")
 
        
 if __name__ == "__main__":

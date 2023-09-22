@@ -2,5 +2,15 @@
     "username":"s27184884@gmail.com",
     "password":"Adm!n@123",
     "apppassword":"xczx swyz atej vilo",
-    "appname":"Python"
+    "appname":"Python",
+    "origin":"Mumbai",
+    "destination":"Bengaluru",
+    "departure_date":"Sun Oct 08 2023",
+    "last_name":"Sharma",
+    "first_name":"Shreya",
+    "gender":"female",
+    "phone_number":"8369932133",
+    "email":"shrey995@gmail.com",
+    "pincode":"421004",
+    "state":"Maharashtra"
 }
