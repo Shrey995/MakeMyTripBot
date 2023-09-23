@@ -66,9 +66,6 @@ class TestLoginWithSecondGoogleAccount(unittest.TestCase):
 
         # Switch to your iframe by finding it using the "#document" identifier
         try:
-            # iframe = WebDriverWait(self.driver, 10).until(
-            #     EC.frame_to_be_available_and_switch_to_it((By.XPATH, "//iframe[@name='#document']"))
-            # )
 
             # Find the element with class "g_id_signin" and click it
             element_to_click = WebDriverWait(self.driver, 10).until(

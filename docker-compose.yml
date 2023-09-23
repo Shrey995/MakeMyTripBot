@@ -1,0 +1,14 @@
+version: '3'
+services:
+  web:
+    build: .
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/app  # Map your current directory to /app in the container
+    depends_on:
+      - selenium
+  selenium:
+    image: selenium/standalone-chrome
+    ports:
+      - "4444:4444"

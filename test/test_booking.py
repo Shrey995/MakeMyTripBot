@@ -1,4 +1,7 @@
+import os
+import time
 import unittest
+from flask import jsonify
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
@@ -6,41 +9,17 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
-import time
 from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import Select
-import os
-import json
 
 class TestFlightBooking(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        # Find the last folder number in the "reports" directory
-        existing_folders = [f for f in os.listdir("reports") if f.startswith("test")]
-        cls.test_case_count = len(existing_folders) + 1
-
-    def setUp(self):
-        self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
-        self.driver.implicitly_wait(10)
-        self.driver.maximize_window()
-
-        # Create the folder name with zero-padding
-        folder_name = f"test{self.test_case_count:02}_screenshots"
-        self.test_dir = os.path.join("reports", folder_name)
-        os.makedirs(self.test_dir, exist_ok=True)
-
-        # Read inputs from inputs.txt
-        with open('inputs/input.txt', 'r') as file:
-            self.inputs = json.load(file)
-
-        # Increment the test case count for the next test
-        self.__class__.test_case_count += 1
-
-    def tearDown(self):
-        self.driver.save_screenshot(os.path.join(self.test_dir, f"{str(int(time.time()))}.png"))
-        self.driver.quit()
+    def __init__(self, driver,test_case_count, inputs,test_dir):
+        super().__init__()
+        self.driver=driver
+        self.test_case_count = test_case_count
+        self.inputs = inputs
+        self.test_dir=test_dir
+        os.makedirs(test_dir, exist_ok=True)
 
     def remove_first_popup(self):
         try:
@@ -84,7 +63,9 @@ class TestFlightBooking(unittest.TestCase):
             pass
 
     def take_screenshot(self, name):
-        self.driver.save_screenshot(os.path.join(self.test_dir, f"{name}.png"))
+        screenshot_path = os.path.join(self.test_dir, f"{name}.png")
+        self.driver.save_screenshot(screenshot_path)
+        return screenshot_path
 
     def select_date(self, target_date):
         try:
@@ -112,6 +93,7 @@ class TestFlightBooking(unittest.TestCase):
             self.fail(f"An error occurred while selecting departure and return dates: {str(e)}")
 
     def test_flight_booking(self):
+        
         # Navigate to the flight booking page
         self.driver.get("https://www.makemytrip.com/")
 
@@ -342,7 +324,7 @@ class TestFlightBooking(unittest.TestCase):
                          # If found, break the loop
                          break
                        except NoSuchElementException:
-                        # If not found, scroll down
+                        # sIf not found, scroll down
                         self.driver.execute_script("window.scrollBy(0, 200);")
             
             continue2_button.click()
@@ -377,11 +359,20 @@ class TestFlightBooking(unittest.TestCase):
             proceed2_button.click()
             time.sleep(30)
             self.take_screenshot("Payment_Gateway")
-            time.sleep(30)
+            
+                    # Clean up resources and return a response
+            screenshot_path = os.path.join(self.test_dir, f"{str(int(time.time()))}.png")
+            self.driver.save_screenshot(screenshot_path)
+            self.driver.quit()
+            response_data = {
+            "screenshot_path": screenshot_path,
+            "request_data": self.inputs
+            }
+            return jsonify(response_data)
         except Exception as e:
             # print(e)
             self.fail(f"An error occurred during flight booking: {str(e)}")
 
        
-if __name__ == "__main__":
-    unittest.main()
+
+
